@@ -11,7 +11,7 @@ public class PostgresContainerFixture : IAsyncLifetime
             .WithResourceMapping(new DirectoryInfo(
                     Path.Combine(AppContext.BaseDirectory, "sql")),
                 "/docker-entrypoint-initdb.d/")
-            // если хотим переиспользовать контейнер для всех тестов
+            // если хотим не ронять контейнер после всех тестов и оставить до следующего dotnet test
             // .WithReuse(true)
             .Build();
 
