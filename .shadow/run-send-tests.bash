@@ -2,8 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(git -C "${BASH_SOURCE%/*}" rev-parse --show-toplevel 2>/dev/null)"
-LOG_FILE="$REPO_ROOT/.shadow/test-run.log"; mkdir -p "${LOG_FILE%/*}"
-
+LOG_FILE="$REPO_ROOT/.shadow/test-run-$(basename "$CFG" .json).log"
 # ── 1. Получаем путь к конфигу ────────────────────────────────
 CFG=${1:-${CONFIG_PATH:-}}
 [[ -z $CFG ]] && { echo "❌ no config path"; exit 2; }
