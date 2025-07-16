@@ -36,5 +36,5 @@ app.MapGet("/health", () => Results.Ok("OK"));
 
 app.Run();
 
-// Для интеграционных тестов
+// Для интеграционных тестов 
 public partial class Program { }
