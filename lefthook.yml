@@ -4,7 +4,8 @@ output:
   - execution_out
   - summary
 
-projects:
+pre-push:
+  parallel: true
   commands:
     run-example:
       env:
@@ -20,16 +21,3 @@ projects:
       root: "."
       glob:
         - "shadow-agent/**/*.cs"
-
-pre-push:
-  parallel: true
-  commands:
-    announce:
-      run: echo "🚀 Запускаю интеграционные тесты в фоне…"
-    background-tests:
-      run: >
-        bash -c '
-          LOG=".shadow/test-run.log";
-          echo "🚀 $(date +"%Y-%m-%d %H:%M:%S") Запуск интеграционных тестов" > "$LOG";
-          lefthook run projects >> "$LOG" 2>&1
-        '

@@ -1,48 +1,60 @@
 #!/usr/bin/env sh
 set -e
 
-echo "🧪 Запуск тестов..."
+LOG_FILE=".shadow/test-run.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+
+# Очистка и стартовое сообщение
+echo "🚀 $(date +"%Y-%m-%d %H:%M:%S") Запуск интеграционных тестов" > "$LOG_FILE"
+echo "Лог: $LOG_FILE"
 
 CONFIG_FILE="$1"
-echo "⚙️ Использую конфиг: $CONFIG_FILE"
+
+# Функция для записи в лог и на экран
+log() {
+  echo "$@" | tee -a "$LOG_FILE"
+}
+
+log "🧪 Запуск тестов..."
+log "⚙️ Использую конфиг: $CONFIG_FILE"
 
 run_tests() {
   for project in "$@"; do
-    echo "🔹 Тестируем: $project"
-    dotnet test "$project" --no-build --verbosity minimal
+    log "🔹 Тестируем: $project"
+    dotnet test "$project" --no-build --verbosity minimal >> "$LOG_FILE" 2>&1
     STATUS=$?
     if [ $STATUS -ne 0 ]; then
-      echo "❌ Ошибка в проекте $project (код $STATUS)"
+      log "❌ Ошибка в проекте $project (код $STATUS)"
       exit $STATUS
     fi
   done
 }
 
 if ! command -v dotnet >/dev/null 2>&1; then
-  echo "❌ dotnet не установлен или не в PATH"
+  log "❌ dotnet не установлен или не в PATH"
   exit 1
 fi
 
 if [ -f "$CONFIG_FILE" ]; then
-  echo "⚙️ Найден конфиг: $CONFIG_FILE"
+  log "⚙️ Найден конфиг: $CONFIG_FILE"
   TEST_PATHS=$(jq -r '.test_projects_root_absolute_path[]?' "$CONFIG_FILE" 2>/dev/null || echo "")
 
   if [ -n "$TEST_PATHS" ]; then
-    echo "📦 Используем пути из test_projects_root_absolute_path:"
-    echo "$TEST_PATHS"
+    log "📦 Используем пути из test_projects_root_absolute_path:"
+    log "$TEST_PATHS"
     run_tests $TEST_PATHS
-    echo "✅ Все тесты завершены успешно (по списку)"
+    log "✅ Все тесты завершены успешно (по списку)"
     exit 0
   fi
 fi
 
-echo "📂 Конфиг не найден или нет test_projects_root_absolute_path — запускаем все тесты в решении"
-dotnet test --no-build --verbosity minimal
+log "📂 Конфиг не найден или нет test_projects_root_absolute_path — запускаем все тесты в решении"
+dotnet test --no-build --verbosity minimal >> "$LOG_FILE" 2>&1
 STATUS=$?
 
 if [ $STATUS -eq 0 ]; then
-  echo "✅ Все тесты успешно завершены"
+  log "✅ Все тесты успешно завершены"
 else
-  echo "❌ Тесты завершились с ошибкой (код $STATUS)"
+  log "❌ Тесты завершились с ошибкой (код $STATUS)"
   exit $STATUS
 fi
