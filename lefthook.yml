@@ -13,13 +13,13 @@ pre-push:
     run-example:
       # glob: "example/**/*.cs"
       run: >
-        bash -c '
+        bash -c "
           mkdir -p .shadow
-          LOG=".shadow/test-run.log"
-          echo "🚀 $(date +"%F %T") start" > "$LOG"
-          # Полный редирект; &  disown -- гарантируем отделение
-          ( exec nohup ./.shadow/run-send-tests.sh "$CONFIG_PATH" >> "$LOG" 2>&1 & disown )
-        '
+          LOG=.shadow/test-run.log
+          echo \"🚀 $(date +'%F %T') start\" > \"\$LOG\"
+          exec nohup ./.shadow/run-send-tests.sh \"\$CONFIG_PATH\" \
+               >> \"\$LOG\" 2>&1 & disown
+        "
       env:
         CONFIG_PATH: ".shadow/example.configuration.json"
 
