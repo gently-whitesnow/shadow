@@ -9,19 +9,10 @@ pre-push:
   commands:
     announce:
       run: echo "🚀 Тесты стартуют в фоне; лог — .shadow/test-run.log"
-      
     run-example:
-      # glob: "example/**/*.cs"
-      run: >
-        bash -c "
-          mkdir -p .shadow
-          LOG=.shadow/test-run.log
-          echo \"🚀 $(date +'%F %T') start\" > \"\$LOG\"
-          exec nohup ./.shadow/run-send-tests.sh \"\$CONFIG_PATH\" \
-               >> \"\$LOG\" 2>&1 & disown
-        "
-      env:
-        CONFIG_PATH: ".shadow/example.configuration.json"
+      env: { CONFIG_PATH: ".shadow/example.configuration.json" }
+      glob: "example/**/*.cs"
+      run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
 
     run-shadow-agent:
       env: { CONFIG_PATH: ".shadow/shadow-agent.configuration.json" }
