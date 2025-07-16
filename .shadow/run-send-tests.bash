@@ -2,6 +2,7 @@
 # Требуется bash ≥ 4 (Linux обычно уже содержит, macOS: brew install bash)
 
 set -euo pipefail        # ловим любые сбои
+set -xv
 
 ##############################################################################
 # 0. Абсолютные пути
@@ -14,25 +15,25 @@ SCRIPT_ABS="$(cd "${BASH_SOURCE%/*}" && pwd)/$(basename "$0")"
 ##############################################################################
 # 1. Detach (первый проход)
 ##############################################################################
-if [[ -z ${DETACHED:-} ]]; then
-  export DETACHED=1
-  {
-    printf '🚀 %s start cfg=%s  pid=%s\n' "$(date '+%F %T')" "$1" "$$"
-    printf 'cwd(parent)=%s\nPATH=%s\n' "$(pwd)" "$PATH"
-  } >"$LOG_FILE"
+# if [[ -z ${DETACHED:-} ]]; then
+#   export DETACHED=1
+#   {
+#     printf '🚀 %s start cfg=%s  pid=%s\n' "$(date '+%F %T')" "$1" "$$"
+#     printf 'cwd(parent)=%s\nPATH=%s\n' "$(pwd)" "$PATH"
+#   } >"$LOG_FILE"
 
-  if command -v setsid &>/dev/null; then
-    setsid "$SCRIPT_ABS" "$@" >>"$LOG_FILE" 2>&1 &
-    CHILD=$!
-  else
-    echo "⚠ setsid missing → nohup" >>"$LOG_FILE"
-    nohup "$SCRIPT_ABS" "$@" >>"$LOG_FILE" 2>&1 &
-    CHILD=$!
-    disown
-  fi
-  echo "spawn child pid=$CHILD" >>"$LOG_FILE"
-  exit 0
-fi
+#   if command -v setsid &>/dev/null; then
+#     setsid "$SCRIPT_ABS" "$@" >>"$LOG_FILE" 2>&1 &
+#     CHILD=$!
+#   else
+#     echo "⚠ setsid missing → nohup" >>"$LOG_FILE"
+#     nohup "$SCRIPT_ABS" "$@" >>"$LOG_FILE" 2>&1 &
+#     CHILD=$!
+#     disown
+#   fi
+#   echo "spawn child pid=$CHILD" >>"$LOG_FILE"
+#   exit 0
+# fi
 
 ##############################################################################
 # 2. Фоновый процесс
