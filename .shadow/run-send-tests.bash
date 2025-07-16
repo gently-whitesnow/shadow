@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+PATH="/opt/homebrew/opt/util-linux/bin:$PATH"
+export PATH
 REPO_ROOT="$(git -C "${BASH_SOURCE%/*}" rev-parse --show-toplevel 2>/dev/null)"
 # ── 1. Получаем путь к конфигу ────────────────────────────────
 CFG=${1:-${CONFIG_PATH:-}}
