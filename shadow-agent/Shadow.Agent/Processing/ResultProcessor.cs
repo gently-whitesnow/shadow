@@ -37,7 +37,6 @@ public sealed class ResultProcessor
         {
             // Вернём позицию, только если можем.
             if (content.CanSeek) content.Position = 0;
-            
         }
 
         var preview = rented.AsSpan(0, read);

@@ -12,19 +12,21 @@ using Shadow.Agent.TaskQueue;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Регистрируем парсеры
+// Парсеры
 builder.Services.AddSingleton<IResultParser, TrxParser>();
 builder.Services.AddSingleton<IResultParser, JUnitParser>();
-// Регистрируем процессор
+
+// Сервисы
 builder.Services.AddSingleton<ResultProcessor>();
+builder.Services.AddSingleton<TestResultsService>();
 
 builder.Services.AddSingleton<ITaskQueue, TaskQueue>()
             .AddHostedService(provider => (TaskQueue)provider.GetRequiredService<ITaskQueue>());
 
-builder.Services.AddSingleton<TestResultsService>();
+// Опции
+builder.Services.AddOptions<AgentOptions>().BindConfiguration(nameof(AgentOptions));
 
-builder.Services.AddOptions<AgentOptions>();
-
+// Конфигурация
 builder.Services.AddControllers();
 
 var app = builder.Build();
