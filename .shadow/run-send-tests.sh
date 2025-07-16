@@ -1,4 +1,12 @@
 #!/usr/bin/env sh
+
+# запускаем в фоне
+[ -z "$DETACHED" ] && {
+  export DETACHED=1
+  setsid nohup "$0" "$@" >> .shadow/test-run.log 2>&1 & disown
+  exit 0        # родитель возвращает управление Git-хуку
+}
+
 set -e
 
 LOG_FILE=".shadow/test-run.log"
