@@ -4,20 +4,20 @@ output:
   - execution_out
   - summary
 
-post-commit:
+pre-push:
   parallel: true
   commands:
     run-example:
       env:
         CONFIG_PATH: ".shadow/example.configuration.json"
-      run: echo {staged_files} && ./.shadow/run-send-tests.sh "$CONFIG_PATH"
       root: "."
-      glob:
-        - "example/**/*.cs"
+      # берём diff последнего коммита
+      files: git diff-tree --no-commit-id --name-only -r HEAD | grep '^example/.*\.cs$' || true
+      run: echo "{staged_files}" && ./.shadow/run-send-tests.sh "$CONFIG_PATH" {staged_files}
+
     run-shadow-agent:
       env:
         CONFIG_PATH: ".shadow/shadow-agent.configuration.json"
-      run: echo {staged_files} && ./.shadow/run-send-tests.sh "$CONFIG_PATH"
       root: "."
-      glob:
-        - "shadow-agent/**/*.cs"
+      files: git diff-tree --no-commit-id --name-only -r HEAD | grep '^shadow-agent/.*\.cs$' || true
+      run: echo "{staged_files}" && ./.shadow/run-send-tests.sh "$CONFIG_PATH" {staged_files}
