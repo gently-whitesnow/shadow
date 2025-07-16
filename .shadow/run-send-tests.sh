@@ -1,57 +1,70 @@
 #!/usr/bin/env sh
 ##############################################################################
-# 0. Абсолютные пути и переменные
+# 0.  абсолютный путь к репо и лог-файлу (работает и в hooks, и из любого CWD)
 ##############################################################################
 REPO_ROOT=$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel 2>/dev/null || pwd)
 LOG_FILE="$REPO_ROOT/.shadow/test-run.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 
-# 1. Первая (родительская) копия — делаем detach и сразу выходим
-if [ -z "$DETACHED" ]; then
-  export DETACHED=1
-  {                                   # пишем атомарно
-    echo "🚀 $(date '+%F %T') start"
-    echo "  cfg   = $1"
-    echo "  pid   = $$"
-    echo "  cwd   = $(pwd)"
-  } >"$LOG_FILE"
-  # setsid → своя сессия; nohup → игнор HUP; exec → stdout в LOG_FILE
-  exec setsid nohup "$0" "$@" >>"$LOG_FILE" 2>&1 &
-  exit 0
+##############################################################################
+# 1.  если setsid недоступен (macOS), fallback на nohup & disown
+##############################################################################
+if command -v setsid >/dev/null 2>&1; then
+  DETACH_CMD="setsid"
+else                                   # macOS: brew install util-linux даёт setsid
+  echo "⚠️  setsid not found; using plain nohup+disown" >>"$LOG_FILE"
+  DETACH_CMD=""
 fi
 
 ##############################################################################
-# 2. Фоновый (рабочий) процесс
+# 2.  первый запуск → перезапуск в фоне и немедленный выход
 ##############################################################################
-echo "—— Detach OK — pid=$$ ppid=$PPID ——"
-echo "cwd after setsid = $(pwd)"
-echo "PATH = $PATH"
+if [ -z "$DETACHED" ]; then
+  export DETACHED=1
+  {
+    echo "🚀 $(date '+%F %T') start   cfg=$1"
+    echo "  pid(parent)=$$   cwd=$(pwd)"
+    echo "  PATH=$PATH"
+  } >"$LOG_FILE"
+
+  # detach: ( subshell ) & + optional setsid, stdout/err уже в ЛОГ
+  (
+    $DETACH_CMD nohup "$0" "$@" >>"$LOG_FILE" 2>&1
+  ) &
+  disown  # гарантируем не-присоединение к текущему shell
+  exit 0  # → git push возвращается сразу
+fi
+
+##############################################################################
+# 3.  логируем, что фоновой процесс точно стартовал
+##############################################################################
+echo "── detached OK  pid=$$  ppid=$PPID  cwd=$(pwd) ──"
 
 CONFIG_FILE="$1"
-echo "Using CONFIG_FILE = $CONFIG_FILE"
+echo "cfg file = $CONFIG_FILE"
 
-command -v dotnet >/dev/null 2>&1 \
-  && echo "dotnet found: $(command -v dotnet)" \
-  || { echo "❌ dotnet not found, abort"; exit 127; }
+##############################################################################
+# 4.  проверяем dotnet и список проектов
+##############################################################################
+DOTNET=$(command -v dotnet || true)
+[ -z "$DOTNET" ] && { echo "❌ dotnet not found"; exit 127; }
+echo "dotnet = $DOTNET"
 
-# ────────────────────────────────────────────────────────────────────────────
-# Читаем список проектов
 if [ -f "$CONFIG_FILE" ]; then
-  mapfile -t TESTS \
-    < <(jq -r '.test_projects_root_absolute_path[]?' "$CONFIG_FILE" 2>/dev/null)
-  echo "Projects from cfg (${#TESTS[@]}): ${TESTS[*]}"
+  mapfile -t TESTS < <(jq -r '.test_projects_root_absolute_path[]?' "$CONFIG_FILE")
+  echo "projects(${#TESTS[@]}): ${TESTS[*]}"
 else
-  echo "⚠️  cfg not found — тестируем решѐние целиком"
+  echo "⚠️  config missing → тестируем решение целиком"
   TESTS=()
 fi
 
-run_tests() {
-  for p in "$@"; do
+##############################################################################
+# 5.  сами тесты
+##############################################################################
+run_tests () {
+  for p; do
     echo "🔹 dotnet test $p"
-    dotnet test "$p" --no-build --verbosity normal
-    s=$?
-    echo "⇢ exit $s for $p"
-    [ $s -ne 0 ] && return $s
+    $DOTNET test "$p" --no-build --verbosity normal || return $?
   done
 }
 
@@ -60,9 +73,9 @@ if [ ${#TESTS[@]} -gt 0 ]; then
   STATUS=$?
 else
   echo "🔹 dotnet test (solution)"
-  dotnet test --no-build --verbosity normal
+  $DOTNET test --no-build --verbosity normal
   STATUS=$?
 fi
 
-echo "—— finished pid=$$ status=$STATUS ——"
+echo "── finished pid=$$  status=$STATUS ──"
 exit $STATUS
