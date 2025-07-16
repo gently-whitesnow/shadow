@@ -1,16 +1,13 @@
 #!/usr/bin/env sh
 
 # запускаем в фоне
-[ -z "$DETACHED" ] && {
-  export DETACHED=1
-  setsid nohup "$0" "$@" >> .shadow/test-run.log 2>&1 & disown
-  exit 0        # родитель возвращает управление Git-хуку
-}
+CONFIG_FILE="$1"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+LOG_FILE="$REPO_ROOT/.shadow/test-run.log"
 
-set -e
-
-LOG_FILE=".shadow/test-run.log"
-mkdir -p "$(dirname "$LOG_FILE")"
+# Если ещё не отделились – сделаем это и вернём управление Git-хуку
+[ -z "$DETACHED" ] && exec setsid nohup "$0" "$CONFIG_FILE" DETACHED=1 \
+        >>"$LOG_FILE" 2>&1 & exit 0
 
 # Очистка и стартовое сообщение
 echo "🚀 $(date +"%Y-%m-%d %H:%M:%S") Запуск интеграционных тестов" > "$LOG_FILE"
