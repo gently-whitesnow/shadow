@@ -25,5 +25,5 @@ pre-push:
         bash -c '
           LOG=".shadow/test-run.log";
           echo "🚀 $(date +"%Y-%m-%d %H:%M:%S") Запуск интеграционных тестов" > "$LOG";
-          lefthook run projects >> "$LOG" 2>&1
+          nohup lefthook run projects >> "$LOG" 2>&1 &
         '
