@@ -4,7 +4,7 @@ output:
   - execution_out
   - summary
 
-pre-push:
+post-commit:
   parallel: true
   commands:
     run-example:
@@ -12,12 +12,12 @@ pre-push:
         CONFIG_PATH: ".shadow/example.configuration.json"
       run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
       root: "."
-      # glob:
-        # - "example/**/*.cs"
+      glob:
+        - "example/**/*.cs"
     run-shadow-agent:
       env:
         CONFIG_PATH: ".shadow/shadow-agent.configuration.json"
       run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
       root: "."
-      # glob:
-        # - "shadow-agent/**/*.cs"
+      glob:
+        - "shadow-agent/**/*.cs"
