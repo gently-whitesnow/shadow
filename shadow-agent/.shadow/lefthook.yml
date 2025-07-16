@@ -1,9 +1,0 @@
-post-commit:
-  commands:
-    run-tests:
-      run: >
-        if [ "$OS" = "Windows_NT" ]; then
-          ./run-tests.bat
-        else
-          ./run-tests.sh
-        fi
