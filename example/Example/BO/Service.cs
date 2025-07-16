@@ -8,7 +8,7 @@ public class ExampleService(IAnotherServiceHttpClient anotherServiceHttpClient, 
 {
     public async Task<(Result, EntityDbModel?)> SaveEntity(EntityDto entityDto)
     {
-        var response = await anotherServiceHttpClient.CheckNameAsync(entityDto.Name);
+        using var response = await anotherServiceHttpClient.CheckNameAsync(entityDto.Name);
         if (!response.IsSuccessStatusCode)
         {
             return (Result.BadName, null);
