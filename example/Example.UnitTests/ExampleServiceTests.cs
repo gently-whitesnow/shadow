@@ -88,7 +88,9 @@ public class ExampleServiceTests
         mockHttpClient.Verify(x => x.CheckNameAsync(entityDto.Name), Times.Once);
         mockDbClient.Verify(x => x.SaveEntityAsync(It.IsAny<string>()), Times.Never);
         
-        // Cleanup
+        // Clean
         httpResponse.Dispose();
     }
+
+
 } 
