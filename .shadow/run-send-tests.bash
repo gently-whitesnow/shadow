@@ -2,23 +2,23 @@
 set -euo pipefail
 
 REPO_ROOT="$(git -C "${BASH_SOURCE%/*}" rev-parse --show-toplevel 2>/dev/null)"
-LOG_FILE="$REPO_ROOT/.shadow/test-run-$(basename "$CFG" .json).log"
 # ── 1. Получаем путь к конфигу ────────────────────────────────
 CFG=${1:-${CONFIG_PATH:-}}
+LOG_FILE="$REPO_ROOT/.shadow/test-run-$(basename "$CFG" .json).log"
 [[ -z $CFG ]] && { echo "❌ no config path"; exit 2; }
 
 # ── 2. Detach (setsid если есть, иначе nohup) ─────────────────
-# if [[ -z ${DETACHED:-} ]]; then
-#   export DETACHED=1
-#   echo "🚀 $(date '+%F %T') start cfg=$CFG pid=$$" >"$LOG_FILE"
-#   if command -v setsid &>/dev/null; then
-#     setsid "$0" "$CFG" >>"$LOG_FILE" 2>&1 &
-#   else
-#     echo "⚠ setsid missing → nohup" >>"$LOG_FILE"
-#     nohup "$0" "$CFG" >>"$LOG_FILE" 2>&1 & disown
-#   fi
-#   exit 0
-# fi
+if [[ -z ${DETACHED:-} ]]; then
+  export DETACHED=1
+  echo "🚀 $(date '+%F %T') start cfg=$CFG pid=$$" >"$LOG_FILE"
+  if command -v setsid &>/dev/null; then
+    setsid "$0" "$CFG" >>"$LOG_FILE" 2>&1 &
+  else
+    echo "⚠ setsid missing → nohup" >>"$LOG_FILE"
+    nohup "$0" "$CFG" >>"$LOG_FILE" 2>&1 & disown
+  fi
+  exit 0
+fi
 
 echo "child pid=$$ cwd=$(pwd)" >>"$LOG_FILE"
 
