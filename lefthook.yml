@@ -3,19 +3,27 @@ output:
   - execution_info
   - execution_out
   - summary
-  
-post-commit:
+
+projects:
   commands:
-    run-send-example-tests:
+    run-example:
       env:
         CONFIG_PATH: ".shadow/example.configuration.json"
-      glob:
-        - "example/**/*.cs"
       run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
-
-    run-send-shadow-agent-tests:
+    run-shadow-agent:
       env:
         CONFIG_PATH: ".shadow/shadow-agent.configuration.json"
-      glob:
-        - "shadow-agent/**/*.cs"
       run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
+
+pre-push:
+  parallel: true
+  commands:
+    announce:
+      run: echo "🚀 Запускаю интеграционные тесты в фоне…"
+    background-tests:
+      run: >
+        bash -c '
+          LOG=".shadow/test-run.log";
+          echo "🚀 $(date +"%Y-%m-%d %H:%M:%S") Запуск интеграционных тестов" > "$LOG";
+          lefthook run projects >> "$LOG" 2>&1
+        '
