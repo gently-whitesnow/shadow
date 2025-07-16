@@ -10,10 +10,16 @@ projects:
       env:
         CONFIG_PATH: ".shadow/example.configuration.json"
       run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
+      root: "."
+      glob:
+        - "example/**/*.cs"
     run-shadow-agent:
       env:
         CONFIG_PATH: ".shadow/shadow-agent.configuration.json"
       run: ./.shadow/run-send-tests.sh "$CONFIG_PATH"
+      root: "."
+      glob:
+        - "shadow-agent/**/*.cs"
 
 pre-push:
   parallel: true
@@ -25,5 +31,5 @@ pre-push:
         bash -c '
           LOG=".shadow/test-run.log";
           echo "🚀 $(date +"%Y-%m-%d %H:%M:%S") Запуск интеграционных тестов" > "$LOG";
-          nohup lefthook run projects >> "$LOG" 2>&1 &
+          lefthook run projects >> "$LOG" 2>&1
         '
