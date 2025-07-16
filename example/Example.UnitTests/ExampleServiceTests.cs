@@ -89,7 +89,7 @@ public class ExampleServiceTests
         mockDbClient.Verify(x => x.SaveEntityAsync(It.IsAny<string>()), Times.Never);
         
         // Cleanup   
-        httpResponse.Dispose();
+        httpResponse.Dispose();  
     }
 
 
