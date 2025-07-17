@@ -4,7 +4,7 @@ output:
   - execution_out
   - summary
 
-pre-push:
+post-commit:
   parallel: true
   commands:
     announce:
@@ -12,8 +12,16 @@ pre-push:
     run-example:
       env: { CONFIG_PATH: ".shadow/example.configuration.json" }
       glob: "example/**/*.cs"
-      run: python3 ./.shadow/run_send_tests.py --detach
+      run: >
+        python3 ./.shadow/run_send_tests.py --detach || 
+        python ./.shadow/run_send_tests.py --detach || 
+        py ./.shadow/run_send_tests.py --detach || 
+        (echo "Python ≥3.8 не найден" >&2; exit 127)
     run-shadow-agent:
       env: { CONFIG_PATH: ".shadow/shadow-agent.configuration.json" }
       glob: "shadow-agent/**/*.cs"
-      run: python3 ./.shadow/run_send_tests.py --detach
+      run: >
+        python3 ./.shadow/run_send_tests.py --detach || 
+        python ./.shadow/run_send_tests.py --detach || 
+        py ./.shadow/run_send_tests.py --detach || 
+        (echo "Python ≥3.8 не найден" >&2; exit 127)
