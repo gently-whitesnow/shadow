@@ -21,13 +21,16 @@ builder.Services.AddSingleton<IResultParser, JUnitParser>();
 // Сервисы
 builder.Services.AddSingleton<ResultProcessor>();
 builder.Services.AddSingleton<TestResultsService>();
+builder.Services.AddSingleton<ScopesService>();
+builder.Services.AddSingleton<ResultConsumerProvider>();
 
 builder.Services.AddSingleton<ITaskQueue, TaskQueue>()
             .AddHostedService(provider => (TaskQueue)provider.GetRequiredService<ITaskQueue>());
 
 // клиенты
 builder.Services.AddNotifications();
-builder.Services.AddSingleton<ScopesDbClient>();
+builder.Services.AddSingleton<IScopesDbClient, ScopesDbClient>();
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 // Опции
 builder.Services.AddOptions<AgentOptions>().BindConfiguration(nameof(AgentOptions));

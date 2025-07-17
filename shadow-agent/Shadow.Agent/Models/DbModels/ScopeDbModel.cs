@@ -7,7 +7,7 @@ public class ScopeDbModel
     public int Id { get; init; }
     public string Name { get; init; }
     public string MessengerChannelId { get; init; }
-    public int NotifyReason { get; init; }
+    public int MessengerNotifyReason { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
 }

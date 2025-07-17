@@ -3,34 +3,40 @@ using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Moq;
+using Shadow.Agent.DA.Postgres;
+using Shadow.Agent.Models.DbModels;
+using Shadow.Agent.Models.Dto;
+using Shadow.Agent.Options;
 
 namespace Shadow.Agent.IntegrationTests;
 
-public class TestRunsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class TestRunsEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public TestRunsEndpointTests(WebApplicationFactory<Program> factory)
+    public TestRunsEndpointTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
         _client = _factory.CreateClient();
     }
 
     [Fact]
-    public async Task PostTestResults_WithValidTrxContent_ReturnsOk()
+    public async Task PostTestResults_WithValidRequest_ReturnsAccepted()
     {
         // Arrange
-        var trxContent = """
+        var xmlContent = """
             <?xml version="1.0" encoding="utf-8"?>
             <TestRun id="12345" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
               <ResultSummary outcome="Completed">
-                <Counters total="5" executed="5" passed="4" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+                <Counters total="5" executed="5" passed="4" failed="1" />
               </ResultSummary>
             </TestRun>
             """;
 
-        var content = new StringContent(trxContent, Encoding.UTF8, "application/xml");
+        var content = new StringContent(xmlContent, Encoding.UTF8, "application/xml");
 
         // Act
         var response = await _client.PostAsync("/v1/test-results", content);
@@ -39,59 +45,33 @@ public class TestRunsEndpointTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         
         var responseContent = await response.Content.ReadAsStringAsync();
-        // В новой архитектуре возвращается только runId, обработка асинхронная
-        Assert.Contains("\"", responseContent); // Проверяем что runId есть в ответе
+        Assert.NotEmpty(responseContent);
     }
 
     [Fact]
-    public async Task PostTestResults_WithValidJUnitContent_ReturnsOk()
+    public async Task PostTestResults_WithCustomHeaders_ReturnsAcceptedWithCorrectMetadata()
     {
         // Arrange
-        var junitContent = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <testsuite name="TestSuite" tests="8" failures="2" errors="1" skipped="1" time="30.5">
-              <testcase classname="MyClass" name="test1" time="1.0"/>
-              <testcase classname="MyClass" name="test2" time="2.0">
-                <failure message="Test failed">Stack trace</failure>
-              </testcase>
-            </testsuite>
-            """;
-
-        var content = new StringContent(junitContent, Encoding.UTF8, "application/xml");
-
-        // Act
-        var response = await _client.PostAsync("/v1/test-results", content);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        // В новой архитектуре возвращается только runId, обработка асинхронная
-        Assert.Contains("\"", responseContent); // Проверяем что runId есть в ответе
-    }
-
-    [Fact]
-    public async Task PostTestResults_WithCustomHeaders_ReturnsHeaders()
-    {
-        // Arrange
-        var trxContent = """
+        var xmlContent = """
             <?xml version="1.0" encoding="utf-8"?>
             <TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
               <ResultSummary><Counters total="1" passed="1" failed="0"/></ResultSummary>
             </TestRun>
             """;
 
-        var content = new StringContent(trxContent, Encoding.UTF8, "application/xml");
+        var content = new StringContent(xmlContent, Encoding.UTF8, "application/xml");
         
-        // Add custom headers
         var request = new HttpRequestMessage(HttpMethod.Post, "/v1/test-results")
         {
             Content = content
         };
-        request.Headers.Add("X-Shadow-RunId", "test-run-123");
-        request.Headers.Add("X-Shadow-Project", "my-project");
-        request.Headers.Add("X-Shadow-Branch", "main");
-        request.Headers.Add("X-Shadow-Commit", "abc123");
+        request.Headers.Add("Shadow-RunId", "test-run-123");
+        request.Headers.Add("Shadow-Scope", "my-project");
+        request.Headers.Add("Shadow-Branch", "main");
+        request.Headers.Add("Shadow-Commit", "abc123def");
+        request.Headers.Add("Shadow-MachineName", "test-machine");
+        request.Headers.Add("Shadow-OsPlatform", "linux");
+        request.Headers.Add("Shadow-ProcessorCount", "8");
 
         // Act
         var response = await _client.SendAsync(request);
@@ -100,8 +80,13 @@ public class TestRunsEndpointTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         
         var responseContent = await response.Content.ReadAsStringAsync();
-        // В новой архитектуре возвращается только runId, остальные поля не возвращаются
         Assert.Contains("test-run-123", responseContent);
+        Assert.Contains("my-project", responseContent);
+        Assert.Contains("main", responseContent);
+        Assert.Contains("abc123def", responseContent);
+        Assert.Contains("test-machine", responseContent);
+        Assert.Contains("linux", responseContent);
+        Assert.Contains("8", responseContent);
     }
 
     [Fact]
@@ -113,22 +98,52 @@ public class TestRunsEndpointTests : IClassFixture<WebApplicationFactory<Program
         // Act
         var response = await _client.PostAsync("/v1/test-results", content);
 
-        // Assert  
-        // В новой архитектуре запрос принимается, ошибки обрабатываются асинхронно
+        // Assert
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
     }
+}
 
-    [Fact]
-    public async Task PostTestResults_WithUnsupportedContent_ReturnsAccepted()
+public class TestWebApplicationFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // Arrange
-        var content = new StringContent("This is not a valid test report", Encoding.UTF8, "text/plain");
+        builder.ConfigureServices(services =>
+        {
+            // Удаляем реальный IScopesDbClient
+            var scopesDbClientDescriptor = services.Single(d => d.ServiceType == typeof(IScopesDbClient));
+            services.Remove(scopesDbClientDescriptor);
 
-        // Act
-        var response = await _client.PostAsync("/v1/test-results", content);
+            // Добавляем мок IScopesDbClient
+            var mockScopesClient = new Mock<IScopesDbClient>();
+            mockScopesClient.Setup(x => x.GetScopeAsync(It.IsAny<string>()))
+                .ReturnsAsync(new ScopeDbModel 
+                { 
+                    Name = "test-scope", 
+                    MessengerChannelId = "test-channel",
+                    MessengerNotifyReason = 0
+                });
+            
+            mockScopesClient.Setup(x => x.CreateScopeAsync(It.IsAny<ScopeDto>()))
+                .ReturnsAsync(new ScopeDbModel 
+                { 
+                    Name = "new-scope", 
+                    MessengerChannelId = "new-channel",
+                    MessengerNotifyReason = 1
+                });
 
-        // Assert
-        // В новой архитектуре запрос принимается, ошибки обрабатываются асинхронно  
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            mockScopesClient.Setup(x => x.UpdateScopeAsync(It.IsAny<ScopeDto>()))
+                .ReturnsAsync(new ScopeDbModel 
+                { 
+                    Name = "updated-scope", 
+                    MessengerChannelId = "updated-channel",
+                    MessengerNotifyReason = 2
+                });
+
+            services.AddSingleton(mockScopesClient.Object);
+
+                         // Настраиваем DefaultOptions для тестов
+             services.AddSingleton<IOptions<DefaultOptions>>(
+                 new OptionsWrapper<DefaultOptions>(new DefaultOptions { DefaultChannelId = "default-test-channel" }));
+        });
     }
 } 

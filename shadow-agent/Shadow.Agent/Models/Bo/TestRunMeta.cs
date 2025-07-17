@@ -1,5 +1,3 @@
-using System;
-
 namespace Shadow.Agent.Models.Bo;
 
 public sealed record TestRunMeta
@@ -13,7 +11,7 @@ public sealed record TestRunMeta
     public string? MachineName   { get; init; }
     public string? OsPlatform    { get; init; }
     public string? OsArchitecture{ get; init; }
-    public int?    ProcessorCount{ get; init; }
-    public DateTimeOffset? StartUtc    { get; init; }
-    public DateTimeOffset? FinishUtc   { get; init; }
+    public string?    ProcessorCount{ get; init; }
+    public string? StartUtc    { get; init; }
+    public string? FinishUtc   { get; init; }
 }

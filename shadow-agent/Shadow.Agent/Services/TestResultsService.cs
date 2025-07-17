@@ -28,9 +28,10 @@ public sealed class TestResultsService(
 
 
                 var resultTask = processor.ProcessAsync(fs);
-                var scopeTask = scopesService.GetScopeAsync(meta.ScopeName);
+                var scopeTask = scopesService.GetScopeAsync(meta.Scope);
 
-                await Task.WhenAll(resultTask, scopeTask);
+                await resultTask;
+                await scopeTask;
 
                 log.LogInformation("Run {@meta} processed OK", meta);
                 await resultConsumerProvider.SendResultAsync(scopeTask.Result, meta, resultTask.Result);

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Shadow.Agent.Models.DbModels;
@@ -5,14 +6,14 @@ using Shadow.Agent.Models.Dto;
 
 namespace Shadow.Agent.DA.Postgres;
 
-public sealed class ScopesDbClient : PostgresClient
+public sealed class ScopesDbClient : PostgresClient, IScopesDbClient
 {
     public async Task<ScopeDbModel> CreateScopeAsync(ScopeDto dto)
     {
         await using var conn = await DataSource.OpenConnectionAsync();
         return await conn.QuerySingleAsync<ScopeDbModel>(
-            "SELECT * FROM public.create_scope(@name, @messenger_channel_id, @notify_reason);",
-            new { name = dto.Name, messengerChannelId = dto.Messenger.ChannelId, notifyReason = dto.Messenger.NotifyReason }
+            "SELECT * FROM public.create_scope(@name, @messenger_channel_id, @messenger_notify_reason);",
+            new { name = dto.Name, messenger_channel_id = dto.Messenger.ChannelId, messenger_notify_reason = dto.Messenger.NotifyReason }
         );
     }
 
@@ -20,9 +21,15 @@ public sealed class ScopesDbClient : PostgresClient
     {
         await using var conn = await DataSource.OpenConnectionAsync();
         return await conn.QuerySingleAsync<ScopeDbModel>(
-            "SELECT * FROM public.update_scope(@name, @messenger_channel_id, @notify_reason);",
-            new { name = dto.Name, messengerChannelId = dto.Messenger.ChannelId, notifyReason = dto.Messenger.NotifyReason }
+            "SELECT * FROM public.update_scope(@name, @messenger_channel_id, @messenger_notify_reason);",
+            new { name = dto.Name, messenger_channel_id = dto.Messenger.ChannelId, messenger_notify_reason = dto.Messenger.NotifyReason }
         );
+    }
+
+    public async Task<ScopeDbModel[]> ListScopesAsync()
+    {
+        await using var conn = await DataSource.OpenConnectionAsync();
+        return (await conn.QueryAsync<ScopeDbModel>("SELECT * FROM public.list_scopes();")).ToArray();
     }
 
     public async Task<ScopeDbModel?> GetScopeAsync(string scopeName)
