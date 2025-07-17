@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Shadow.Agent.Processing;
+using Shadow.Agent.Models.Bo;
 
 namespace Shadow.Agent.Parsers;
 
@@ -16,5 +16,5 @@ public interface IResultParser
     /// <summary>
     /// Парсит содержимое и возвращает суммарную информацию о тестах
     /// </summary>
-    Task<TestRunSummary> ParseAsync(Stream content, CancellationToken ct = default);
+    Task<TestRunResult> ParseAsync(Stream content, CancellationToken ct = default);
 } 

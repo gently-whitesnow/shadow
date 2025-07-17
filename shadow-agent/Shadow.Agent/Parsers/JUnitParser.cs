@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using Shadow.Agent.Processing;
+using Shadow.Agent.Models.Bo;
 
 namespace Shadow.Agent.Parsers;
 
@@ -17,7 +17,7 @@ public sealed class JUnitParser : IResultParser
         return preview.IndexOf(Suite) >= 0 || preview.IndexOf(Suites) >= 0;
     }
 
-    public async Task<TestRunSummary> ParseAsync(Stream content, CancellationToken ct = default)
+    public async Task<TestRunResult> ParseAsync(Stream content, CancellationToken ct = default)
     {
         var settings = new XmlReaderSettings
         {
@@ -43,7 +43,7 @@ public sealed class JUnitParser : IResultParser
                     failures += GetInt(reader, "failures");
                     errors += GetInt(reader, "errors");
                     skipped += GetInt(reader, "skipped");
-                    return new TestRunSummary
+                    return new TestRunResult
                     {
                         Total = total,
                         Passed = total - failures - errors - skipped,
@@ -81,7 +81,7 @@ public sealed class JUnitParser : IResultParser
         var failed = failures + errors;
         var passed = total - failed - skipped;
 
-        return new TestRunSummary
+        return new TestRunResult
         {
             Total = total,
             Passed = passed,

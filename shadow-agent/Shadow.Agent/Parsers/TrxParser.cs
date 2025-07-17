@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using Shadow.Agent.Processing;
+using Shadow.Agent.Models.Bo;
 
 namespace Shadow.Agent.Parsers;
 
@@ -24,7 +24,7 @@ public sealed class TrxParser : IResultParser
         return preview.IndexOf(TeamTest) >= 0;
     }
 
-    public async Task<TestRunSummary> ParseAsync(Stream content, CancellationToken ct = default)
+    public async Task<TestRunResult> ParseAsync(Stream content, CancellationToken ct = default)
     {
         // Прочитаем первые 4 байта, чтобы понять ZIP или XML.
         content.Position = 0;
@@ -42,7 +42,7 @@ public sealed class TrxParser : IResultParser
             : await ParseXmlAsync(content, ct);
     }
 
-    private static async Task<TestRunSummary> ParseZipAsync(Stream zip, CancellationToken ct)
+    private static async Task<TestRunResult> ParseZipAsync(Stream zip, CancellationToken ct)
     {
         using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: true);
 
@@ -57,7 +57,7 @@ public sealed class TrxParser : IResultParser
         throw new InvalidOperationException("TRX file not found in archive");
     }
 
-    private static async Task<TestRunSummary> ParseXmlAsync(Stream xml, CancellationToken ct)
+    private static async Task<TestRunResult> ParseXmlAsync(Stream xml, CancellationToken ct)
     {
         var settings = new XmlReaderSettings
         {
@@ -102,7 +102,7 @@ public sealed class TrxParser : IResultParser
 
         if (total == 0) total = passed + failed + skipped;
 
-        return new TestRunSummary
+        return new TestRunResult
         {
             Total = total,
             Passed = passed,

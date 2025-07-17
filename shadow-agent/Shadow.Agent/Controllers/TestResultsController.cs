@@ -9,8 +9,7 @@ using Shadow.Agent.Services;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-
-
+using Shadow.Agent.Helpers;
 
 namespace Shadow.Agent.Controllers;
 
@@ -33,9 +32,8 @@ public sealed class TestResultsController(
         Request.EnableBuffering();           // буфер + Seek
         Request.Body.Position = 0;           // гарантируем начало
 
-        var runId = Request.Headers["X-Shadow-RunId"].FirstOrDefault()
-                   ?? Guid.NewGuid().ToString("N");
-        var tmpPath = Path.Combine(_tmpDir, $"{runId}.report");
+        var meta = TestRunHeadersHelper.GetTestRunMeta(Request);
+        var tmpPath = Path.Combine(_tmpDir, $"{meta.RunId ?? Guid.NewGuid().ToString("N")}.report");
 
         // стараемся сразу сохранить в файл и отдать 202
         await using (var fs = System.IO.File.Create(
@@ -56,10 +54,10 @@ public sealed class TestResultsController(
             }
         }
 
-        logger.LogInformation("Run {RunId} saved to {File} ({Bytes} B)",
-                           runId, tmpPath, Request.ContentLength);
+        logger.LogInformation("Run {@meta} saved to {File} ({Bytes} B)",
+                           meta, tmpPath, Request.ContentLength);
 
-        await testResultsService.EnqueueForProcessingAsync(runId, tmpPath);
-        return Accepted(new { runId });
+        await testResultsService.EnqueueForProcessingAsync(meta, tmpPath);
+        return Accepted(meta);
     }
 }

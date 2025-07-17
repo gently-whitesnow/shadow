@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Shadow.Agent.Models.Bo;
 using Shadow.Agent.Processing;
 using Shadow.Agent.TaskQueue;
 
@@ -11,10 +12,12 @@ namespace Shadow.Agent.Services;
 public sealed class TestResultsService(
         ILogger<TestResultsService> log,
         ResultProcessor processor,
-        ITaskQueue queue)
+        ITaskQueue queue,
+        ResultConsumerProvider resultConsumerProvider,
+        ScopesService scopesService)
 {
     public ValueTask EnqueueForProcessingAsync(
-        string runId, string filePath) =>
+        TestRunMeta meta, string filePath) =>
         queue.EnqueueAsync(async () =>
         {
             try
@@ -23,8 +26,14 @@ public sealed class TestResultsService(
                         filePath, FileMode.Open, FileAccess.Read,
                         FileShare.None | FileShare.Delete);        // заблокируем от паралл. чтения
 
-                await processor.ProcessAsync(fs);
-                log.LogInformation("Run {RunId} processed OK", runId);
+
+                var resultTask = processor.ProcessAsync(fs);
+                var scopeTask = scopesService.GetScopeAsync(meta.ScopeName);
+
+                await Task.WhenAll(resultTask, scopeTask);
+
+                log.LogInformation("Run {@meta} processed OK", meta);
+                await resultConsumerProvider.SendResultAsync(scopeTask.Result, meta, resultTask.Result);
             }
             finally
             {
@@ -35,5 +44,5 @@ public sealed class TestResultsService(
                     throw;
                 }
             }
-        }, log.LogError, "Run {RunId} failed", runId);
+        }, log.LogError, "Run {@meta} failed", meta);
 }

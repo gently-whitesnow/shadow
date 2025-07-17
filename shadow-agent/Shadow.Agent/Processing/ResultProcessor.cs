@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Shadow.Agent.Models.Bo;
 using Shadow.Agent.Parsers;
 
 namespace Shadow.Agent.Processing;
@@ -22,7 +23,7 @@ public sealed class ResultProcessor
         _logger = logger;
     }
 
-    public async ValueTask<TestRunSummary> ProcessAsync(
+    public async ValueTask<TestRunResult> ProcessAsync(
         Stream content,
         CancellationToken ct = default)
     {
@@ -63,7 +64,7 @@ public sealed class ResultProcessor
         return await ParseWithAsync(parser, content, ct);
     }
 
-    private async ValueTask<TestRunSummary> ParseWithAsync(
+    private async ValueTask<TestRunResult> ParseWithAsync(
         IResultParser parser,
         Stream content,
         CancellationToken ct)
@@ -84,7 +85,7 @@ public sealed class ResultProcessor
         }
     }
 
-    private void LogSummary(TestRunSummary s)
+    private void LogSummary(TestRunResult s)
     {
         if (s.Failed > 0)
             _logger.LogWarning("❌ {Failed}/{Total} failed - {Skipped} skipped", s.Failed, s.Total, s.Skipped);

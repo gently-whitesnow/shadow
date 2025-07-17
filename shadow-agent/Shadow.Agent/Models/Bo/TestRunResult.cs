@@ -1,6 +1,6 @@
-namespace Shadow.Agent.Processing;
+namespace Shadow.Agent.Models.Bo;
 
-public record TestRunSummary
+public record TestRunResult
 {
     public int Total { get; init; }
     public int Passed { get; init; }
