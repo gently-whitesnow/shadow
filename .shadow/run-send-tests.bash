@@ -9,15 +9,19 @@ LOG_FILE="$REPO_ROOT/.shadow/test-run-$(basename "$CFG" .json).log"
 [[ -z $CFG ]] && { echo "❌ no config path"; exit 2; }
 
 # ── 2. Detach (setsid если есть, иначе nohup) ─────────────────
-if [[ -z ${DETACHED:-} ]]; then
-  export DETACHED=1
-  echo "🚀 $(date '+%F %T') start cfg=$CFG pid=$$" >"$LOG_FILE"
-  if command -v setsid &>/dev/null; then
-    setsid "$0" "$CFG" >>"$LOG_FILE" 2>&1 &
-  else
-    echo "⚠ setsid missing → nohup" >>"$LOG_FILE"
-    nohup "$0" "$CFG" >>"$LOG_FILE" 2>&1 & disown
-  fi
+if [[ -z ${SHADOW_DETACHED:-} ]]; then
+  export SHADOW_DETACHED=1
+  LOG="$REPO_ROOT/.shadow/test-run.log"
+  {
+    printf '🚀 %s cfg=%s\n' "$(date '+%F %T')" "$CFG"
+    exec </dev/null
+    if command -v setsid &>/dev/null; then
+      exec setsid bash -c 'exec "$0" "$1"' "$0" "$CFG"
+    else
+      echo "⚠ setsid нет — устанавливайте util-linux" >&2
+      exit 125
+    fi
+  } >>"$LOG" 2>&1 &
   exit 0
 fi
 

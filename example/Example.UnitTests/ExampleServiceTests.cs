@@ -19,21 +19,21 @@ public class ExampleServiceTests
         // Arrange
         var mockHttpClient = new Mock<IAnotherServiceHttpClient>();
         var mockDbClient = new Mock<IEntityPostgresDbClient>();
-        
+
         var entityDto = new EntityDto { Name = "TestEntity" };
-        var expectedDbModel = new EntityDbModel 
-        { 
-            Id = 1, 
-            Name = "TestEntity", 
-            CreatedAt = DateTime.UtcNow 
+        var expectedDbModel = new EntityDbModel
+        {
+            Id = 1,
+            Name = "TestEntity",
+            CreatedAt = DateTime.UtcNow
         };
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK);
-        
+
         mockHttpClient
             .Setup(x => x.CheckNameAsync(entityDto.Name))
             .ReturnsAsync(httpResponse);
-            
+
         mockDbClient
             .Setup(x => x.SaveEntityAsync(entityDto.Name))
             .ReturnsAsync(expectedDbModel);
@@ -48,10 +48,10 @@ public class ExampleServiceTests
         Assert.NotNull(model);
         Assert.Equal(expectedDbModel.Id, model.Id);
         Assert.Equal(expectedDbModel.Name, model.Name);
-        
+
         mockHttpClient.Verify(x => x.CheckNameAsync(entityDto.Name), Times.Once);
         mockDbClient.Verify(x => x.SaveEntityAsync(entityDto.Name), Times.Once);
-        
+
         // Cleanup
         httpResponse.Dispose();
     }
@@ -67,11 +67,11 @@ public class ExampleServiceTests
         // Arrange
         var mockHttpClient = new Mock<IAnotherServiceHttpClient>();
         var mockDbClient = new Mock<IEntityPostgresDbClient>();
-        
+
         var entityDto = new EntityDto { Name = "TestEntity" };
 
         var httpResponse = new HttpResponseMessage(httpStatusCode);
-        
+
         mockHttpClient
             .Setup(x => x.CheckNameAsync(entityDto.Name))
             .ReturnsAsync(httpResponse);
@@ -84,13 +84,11 @@ public class ExampleServiceTests
         // Assert
         Assert.Equal(Result.BadName, result);
         Assert.Null(model);
-        
+
         mockHttpClient.Verify(x => x.CheckNameAsync(entityDto.Name), Times.Once);
         mockDbClient.Verify(x => x.SaveEntityAsync(It.IsAny<string>()), Times.Never);
-        
-        // Cleanup     
-        httpResponse.Dispose();  
+
+        // Cleanup 
+        httpResponse.Dispose();
     }
-
-
-} 
+}
