@@ -7,7 +7,7 @@ public static class NotificationsExtensions
 {
     public static IServiceCollection AddNotifications(this IServiceCollection services)
     {
-        services.AddSingleton<IResultConsumer, MessengerService>();
+        services.AddSingleton<IResultConsumer, NotificationsService>();
         services.AddMattermostNotifications();
         // todo any messenger
         

@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +15,22 @@ using Shadow.Agent.Services;
 using Shadow.Agent.TaskQueue;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .AddCommandLine(args);
+
+var externalPath = Path.Combine(AppContext.BaseDirectory, "external_settings.json");
+if (File.Exists(externalPath))
+{
+    builder.Configuration.AddJsonFile(externalPath, optional: false, reloadOnChange: true);
+}
+else
+{
+    Console.WriteLine("File external_settings.json not found");
+}
 
 // Парсеры
 builder.Services.AddSingleton<IResultParser, TrxParser>();
@@ -38,13 +56,17 @@ builder.Services.AddOptions<DefaultOptions>().BindConfiguration(nameof(DefaultOp
 
 // Конфигурация
 builder.Services.AddControllers();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok("OK"));
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.Run();
+
 
 
 // Для интеграционных тестов 

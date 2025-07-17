@@ -10,7 +10,7 @@ using Shadow.Agent.Models.DbModels;
 
 namespace Shadow.Agent.Services;
 
-public sealed class MessengerService(
+public sealed class NotificationsService(
     IEnumerable<IMessengerClient> clients) : IResultConsumer
 {
     public async Task SendResultAsync(ScopeDbModel scope, TestRunMeta meta, TestRunResult result)
@@ -44,6 +44,7 @@ public sealed class MessengerService(
         // 3. собираем сообщение
         return
     $"""
+**{result.ProjectName}**
 🧪 {result.Passed} / {result.Total} ✓ ❌ {result.Failed} ⚠️ {result.Skipped}
 👤 {meta.OsUser} · {meta.Scope}  💻 {meta.MachineName} ({meta.OsPlatform?.Split('-').FirstOrDefault() ?? meta.OsPlatform}, {cpuInfo})
 🌿 {meta.Branch} @ {shortSha} ⏱ {dur} ({started:HH:mm:ss}→{finished:HH:mm:ss} UTC)

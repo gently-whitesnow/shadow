@@ -1,6 +1,6 @@
 {
     "agent_address": "http://localhost:8080",
-    "scope": "team_example", 
+    "scope": "example", 
     "test_projects_root_absolute_path": [
         "example/Example.IntegrationTests/Example.IntegrationTests.csproj",
         "example/Example.UnitTests/Example.UnitTests.csproj"

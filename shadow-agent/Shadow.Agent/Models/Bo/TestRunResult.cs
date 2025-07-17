@@ -6,4 +6,5 @@ public record TestRunResult
     public int Passed { get; init; }
     public int Failed { get; init; }
     public int Skipped { get; init; }
+    public string? ProjectName { get; init; }
 } 

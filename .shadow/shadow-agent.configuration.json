@@ -1,6 +1,6 @@
 {
     "agent_address": "http://localhost:8080",
-    "scope": "team_shadow", 
+    "scope": "shadow", 
     "test_projects_root_absolute_path": [
         "shadow-agent/Shadow.Agent.IntegrationTests/Shadow.Agent.IntegrationTests.csproj",
         "shadow-agent/Shadow.Agent.UnitTests/Shadow.Agent.UnitTests.csproj"

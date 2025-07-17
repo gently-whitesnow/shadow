@@ -68,6 +68,7 @@ public sealed class TrxParser : IResultParser
         };
 
         int total = 0, passed = 0, failed = 0, skipped = 0;
+        string? projectName = null;
 
         using var reader = XmlReader.Create(xml, settings);
         while (await reader.ReadAsync())
@@ -85,7 +86,21 @@ public sealed class TrxParser : IResultParser
                 break;
             }
 
-            // 2) Медленный путь – перечисляем UnitTestResult
+            // 2) Извлекаем ProjectName из первого UnitTest в TestDefinitions
+            if (reader.LocalName == "UnitTest" && projectName == null)
+            {
+                projectName = await ExtractProjectNameAsync(reader, ct);
+            }
+
+            // 3) Извлекаем ProjectName из первого TestMethod как fallback
+            if (reader.LocalName == "TestMethod" && projectName == null)
+            {
+                var codeBase = reader.GetAttribute("codeBase");
+                var className = reader.GetAttribute("className");
+                projectName = ExtractProjectNameFromAttributes(codeBase, className);
+            }
+
+            // 4) Медленный путь – перечисляем UnitTestResult
             if (reader.LocalName == "UnitTestResult")
             {
                 total++;
@@ -107,7 +122,8 @@ public sealed class TrxParser : IResultParser
             Total = total,
             Passed = passed,
             Failed = failed,
-            Skipped = skipped
+            Skipped = skipped,
+            ProjectName = projectName
         };
     }
 
@@ -126,5 +142,49 @@ public sealed class TrxParser : IResultParser
         }
 
         return totalRead;
+    }
+
+    private static async Task<string?> ExtractProjectNameAsync(XmlReader reader, CancellationToken ct)
+    {
+        // Сначала пробуем из storage атрибута UnitTest
+        var storage = reader.GetAttribute("storage");
+        
+        if (!reader.IsEmptyElement)
+        {
+            // Читаем вложенные элементы в поисках TestMethod с codeBase
+            using var subtreeReader = reader.ReadSubtree();
+            while (await subtreeReader.ReadAsync())
+            {
+                if (subtreeReader.NodeType == XmlNodeType.Element && subtreeReader.LocalName == "TestMethod")
+                {
+                    var codeBase = subtreeReader.GetAttribute("codeBase");
+                    var className = subtreeReader.GetAttribute("className");
+                    return ExtractProjectNameFromAttributes(codeBase ?? storage, className);
+                }
+            }
+        }
+
+        // Fallback: используем storage атрибут
+        return ExtractProjectNameFromAttributes(storage, null);
+    }
+
+    private static string? ExtractProjectNameFromAttributes(string? assemblyPath, string? className)
+    {
+        // Приоритет 1: извлекаем из пути к assembly
+        if (!string.IsNullOrEmpty(assemblyPath))
+        {
+            var projectName = Path.GetFileNameWithoutExtension(assemblyPath);
+            return projectName;
+        }
+
+        // Приоритет 2: извлекаем из className (корневой namespace)
+        if (!string.IsNullOrEmpty(className))
+        {
+            var firstDotIndex = className.IndexOf('.');
+            var rootNamespace = firstDotIndex > 0 ? className[..firstDotIndex] : className;
+            return rootNamespace;
+        }
+
+        return null;
     }
 }
