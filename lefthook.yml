@@ -4,7 +4,7 @@ output:
   - execution_out
   - summary
 
-post-commit:
+pre-push:
   parallel: true
   commands:
     announce:
