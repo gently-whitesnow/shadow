@@ -5,6 +5,7 @@ output:
   - summary
 
 pre-push:
+# post-commit:
   parallel: true
   commands:
     announce:
