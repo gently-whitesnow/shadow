@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Настройки
-RAW_BASE="https://github.com/gently-whitesnow/shadow/blob/master"
+RAW_BASE="https://github.com/gently-whitesnow/shadow/raw/master"
 
 color() { printf "\033[%sm%s\033[0m\n" "$1" "$2"; }
 die()   { color "31" "✖ $*"; exit 1; }
@@ -79,6 +79,9 @@ main() {
   # run_send_tests.py (всегда обновляем)
   fetch_file "${RAW_BASE}/setup/run_send_tests.py" ".shadow/run_send_tests.py"
   chmod +x .shadow/run_send_tests.py
+
+  # .gitignore (всегда обновляем)
+  fetch_file "${RAW_BASE}/setup/.gitignore" ".shadow/.gitignore"
 
   # configuration.json (только если его нет)
   if [[ ! -f .shadow/configuration.json ]]; then
