@@ -83,12 +83,12 @@ main() {
   # .gitignore (всегда обновляем)
   fetch_file "${RAW_BASE}/setup/.gitignore" ".shadow/.gitignore"
 
-  # configuration.json (только если его нет)
-  if [[ ! -f .shadow/configuration.json ]]; then
-    fetch_file "${RAW_BASE}/setup/configuration.json" ".shadow/configuration.json"
+  # *.configuration.json (только если его нет)
+  if find .shadow -maxdepth 1 -type f -name '*.configuration.json' | grep -q .; then
+    ok "*.configuration.json уже существует — пропускаю."
   else
-    ok "configuration.json уже существует — пропускаю."
-  fi
+    fetch_file "${RAW_BASE}/setup/configuration.json" ".shadow/configuration.json"
+ fi
 
   ok "Готово!  ✅  Теперь можно делать обычный git push — тесты запустятся автоматически."
 }
