@@ -1,0 +1,20 @@
+output:
+  - meta
+  - execution_info
+  - execution_out
+  - summary
+
+pre-push:
+# post-commit:
+  parallel: true
+  commands:
+    announce:
+      run: echo "🚀 Тесты стартуют в фоне; лог — .shadow/test-run-<cfg>.log"
+    run:
+      env: { CONFIG_PATH: ".shadow/configuration.json" }
+      glob: "**/*.cs"
+      run: >
+        python3 ./.shadow/run_send_tests.py --detach || 
+        python ./.shadow/run_send_tests.py --detach || 
+        py ./.shadow/run_send_tests.py --detach || 
+        (echo "Python ≥3.8 не найден" >&2; exit 127)
